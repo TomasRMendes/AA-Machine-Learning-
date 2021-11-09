@@ -182,44 +182,108 @@ def H_poly(X,Y,d):
  return H
 
 
-svc_Xs_train=H_poly(Xs_train,Ys_train, 16)
-svc_Xs_test=H_poly(Xs_test, Ys_test, 16)
 
 
+"""
 
-def calc_fold(feats, X,Y, train_ix, valid_ix, C, gamma):
- sv = svm.SVC(C=C,kernel = 'rbf', gamma=gamma, probability=True)
- sv.fit(X[train_ix,:feats],Y[train_ix])
- prob = sv.predict_proba(X[:,:feats])[:,1]
- squares = (prob-Y)**2
- return np.mean(squares[train_ix]),np.mean(squares[valid_ix])
+svc_Xs_train=H_poly(Xs_train,Ys_train, 10)
+svc_Xs_test=H_poly(Xs_test, Ys_test, 10)
 
 
-
-folds = 10
+folds = 5
 kf = StratifiedKFold(n_splits=folds)
 C = 1
-gamma = 1
-best_va_err = 100000
+best_va_err = 100
 best_feats = 0
-for feats in range(2,16):
- tr_err = va_err = 0
- for tr_ix,va_ix in kf.split(Ys_train,Ys_train):
-  r,v = calc_fold(feats,svc_Xs_train,Ys_train,tr_ix,va_ix, C, gamma)
-  tr_err += r
-  va_err += v
-  
- if(va_err < best_va_err):
-      best_va_err = va_err
-      best_feats = feats
- print(feats,':', tr_err/folds,va_err/folds)
+best_gamma = 0
 
-print('best: ',best_feats, best_va_err/folds)
+for gamma in range(2,62,2):
+    if(gamma%10 == 0):
+        print('gamma: ', gamma)
+    for feats in range(2,10):
+     tr_err = va_err = 0
+     for tr_ix,va_ix in kf.split(Ys_train,Ys_train):
+      r,v = calc_fold(feats,svc_Xs_train,Ys_train,tr_ix,va_ix, C, gamma/10)
+      tr_err += r
+      va_err += v
+      
+     if(va_err < best_va_err):
+          best_va_err = va_err
+          best_feats = feats
+          best_gamma = gamma/10
+
+print('best feats: ', best_feats)
+print('best gamma: ', best_gamma)
+print('best validation error: ', best_va_err/folds)
+"""
+
+
+
+#implement the triple thing
+#triple [min, max, step]
+def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, triple, classifier):
+
+    params = dict()
+    
+    params[paramName] = 0
+
+    Xs_r=H_poly(Xs_r,Ys_r, 10)
+    Xs_t=H_poly(Xs_t, Ys_t, 10)
+    
+    
+    folds = 5
+    kf = StratifiedKFold(n_splits=folds)
+    best_va_err = 100
+    best_feats = 0
+    best_optimized = 0
+    
+
+    for i in ((min - max)/step):
+        params[paramName] = min + i * step
+        classifier.set_params(params)
+        
+        
+        tr_err = va_err = 0
+        for tr_ix,va_ix in kf.split(Ys_r,Ys_r):
+           
+           classifier.fit(Xs_r[tr_ix],Ys_r[va_ix])
+           
+           
+           
+           
+           
+           
+           
+           
+           prob = classifier.predict_proba(Xs_r[:,:])[:,1]
+           squares = (prob-Ys_r)**2
+           r = np.mean(squares[tr_ix])
+           v = np.mean(squares[va_ix])   
+             
+           tr_err += r
+           va_err += v
+          
+        if(va_err < best_va_err):
+              best_va_err = va_err
+              best_optimized = min + i * step
+    
+    print('best feats: ', best_feats)
+    print('best optimized: ', best_optimized)
+    print('best validation error: ', best_va_err/folds)
+
+
+
+sv = svm.SVC(C=1,kernel = 'rbf', gamma=0.2, probability=True)
+
+#change the range thing
+crossValidation(Xs_train, Ys_train, Xs_test, Ys_test, 'gamma', range(2,60,2), sv)
+
+
+
 
 
 #needs fixing
 #create_plot(Xs_train, Ys_train, Xs_test, Ys_test, best_feats, 1)
-
 
 
 
