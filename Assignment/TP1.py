@@ -57,38 +57,57 @@ def print_confusion_matrix(mat):
     print("Fake\t\t\t"+str(mat[2])+"\t\t"+str(mat[3]))
     
 
+
+
+def H_poly(X,Y,d):
+ H = np.zeros((X.shape[0],X.shape[0]))
+ for row in range(X.shape[0]):
+     for col in range(X.shape[0]):
+         k = (np.dot(X[row,:],X[col,:])+1)**d
+         H[row,col] = k*Y[row]*Y[col]
+ return H
+
+
+
+
+
+
+
+
+
+
+
 #implement the triple thing
-#triple (min, max, step)
-def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, min_max_step, classifier):
+#triple [min, max, step]
+def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, triple, classifier):
+    tmin = triple[0]
+    tmax = triple[1]
+    tstep = triple[2]
 
     params = dict()
     params[paramName] = 0
 
-    # What is H_poly doing and I think that the Test set (Xs_t,Ys_t) is redundant because its not used
-    # also the test set shouldnt be used in the CrossVal
-    # maybe it's possible to do that operation outside of the crossVal, since its not needed for the nb classifier
     Xs_r=H_poly(Xs_r,Ys_r, 10)
     Xs_t=H_poly(Xs_t, Ys_t, 10)
-    
     
     folds = 5
     kf = StratifiedKFold(n_splits=folds)
     best_va_err = 100
-    best_value = 0
-    
+    best_optimized = 0
 
-    for i in range((min_max_step[0] - min_max_step[1])/min_max_step[2]):
-        params[paramName] = min_max_step[0] + i * min_max_step[2]
-        classifier.set_params(params)
-        
+    #keep the +1 or it wont reach max
+    for i in range(int((tmax - tmin)/tstep) + 1):
+        if(i% 10 == 0):
+            print(i, "of", int((tmax - tmin)/tstep))   
+            
+        params[paramName] = tmin + i * tstep
+        classifier.set_params(**params)
         
         tr_err = va_err = 0
         for tr_ix,va_ix in kf.split(Ys_r,Ys_r):
-           
-           classifier.fit(Xs_r[tr_ix],Ys_r[va_ix])
-           
-           
-           
+            
+            
+           classifier.fit(Xs_r[tr_ix],Ys_r[tr_ix])
            
            prob = classifier.predict_proba(Xs_r[:,:])[:,1]
            squares = (prob-Ys_r)**2
@@ -100,10 +119,23 @@ def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, min_max_step, classifier)
           
         if(va_err < best_va_err):
               best_va_err = va_err
-              best_value = min_max_step[0] + i * min_max_step[2]
+              best_optimized = tmin + i * tstep
     
-    print('best optimized: ', best_value)
+    print('best optimized value: ', best_optimized)
     print('best validation error: ', best_va_err/folds)
+    
+    params[paramName] = best_optimized
+    classifier.set_params(**params)
+    
+    classes = classifier.predict(Xs_test)
+    print_confusion_matrix(calculate_confusion_matrix(classes))
+
+
+
+
+
+
+
 
 
 
@@ -149,9 +181,6 @@ Naïve Bayes classifier using Kernel Density Estimation
 
 """
 
-
-
-
     
 class OwnNaiveBaseClassifier:
     
@@ -195,14 +224,14 @@ class OwnNaiveBaseClassifier:
 
 
 
-
-
+"""
 
 nb = OwnNaiveBaseClassifier(1)
 nb.fit(Xs_train, Ys_train)
 classes = nb.predict(Xs_test)
 print_confusion_matrix(calculate_confusion_matrix(classes))
 
+"""
 
 # show results
 ##mat = calculate_confusion_matrix(kde, Xs_test)
@@ -222,10 +251,10 @@ print_confusion_matrix(calculate_confusion_matrix(classes))
 2.
 Gaussian Naïve Bayes classifier
 
-"""
 
 gnb = GaussianNB()
 gnb.fit(Xs_train,Ys_train)
+"""
 
     
 
@@ -239,65 +268,18 @@ gnb.fit(Xs_train,Ys_train)
 """
 
 
-def H_poly(X,Y,d):
- H = np.zeros((X.shape[0],X.shape[0]))
- for row in range(X.shape[0]):
-     for col in range(X.shape[0]):
-         k = (np.dot(X[row,:],X[col,:])+1)**d
-         H[row,col] = k*Y[row]*Y[col]
- return H
-
-
-
-
-"""
-svc_Xs_train=H_poly(Xs_train,Ys_train, 10)
-svc_Xs_test=H_poly(Xs_test, Ys_test, 10)
-
-
-folds = 5
-kf = StratifiedKFold(n_splits=folds)
-C = 1
-best_va_err = 100
-best_feats = 0
-best_gamma = 0
-
-for gamma in range(2,62,2):
-    if(gamma%10 == 0):
-        print('gamma: ', gamma)
-    for feats in range(2,10):
-     tr_err = va_err = 0
-     for tr_ix,va_ix in kf.split(Ys_train,Ys_train):
-      r,v = calc_fold(feats,svc_Xs_train,Ys_train,tr_ix,va_ix, C, gamma/10)
-      tr_err += r
-      va_err += v
-      
-     if(va_err < best_va_err):
-          best_va_err = va_err
-          best_feats = feats
-          best_gamma = gamma/10
-
-print('best feats: ', best_feats)
-print('best gamma: ', best_gamma)
-print('best validation error: ', best_va_err/folds)
-"""
-
-
 
 
 
 
 sv = svm.SVC(C=1,kernel = 'rbf', gamma=0.2, probability=True)
-
+triple = [0.2, 6.0, 0.2]
 #change the range thing
-crossValidation(Xs_train, Ys_train, Xs_test, Ys_test, 'gamma', range(2,60,2), sv)
+
+crossValidation(Xs_train, Ys_train, Xs_test, Ys_test, 'gamma', triple, sv)
 
 
 
-
-
-#needs fixing
-#create_plot(Xs_train, Ys_train, Xs_test, Ys_test, best_feats, 1)
 
 
 
