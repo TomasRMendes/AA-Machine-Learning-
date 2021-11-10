@@ -127,7 +127,7 @@ def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, triple, classifier):
     params[paramName] = best_optimized
     classifier.set_params(**params)
     
-    classes = classifier.predict(Xs_test)
+    classes = classifier.predict(Xs_t)
     print_confusion_matrix(calculate_confusion_matrix(classes))
 
 
