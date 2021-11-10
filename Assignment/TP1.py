@@ -58,13 +58,15 @@ def print_confusion_matrix(mat):
     
 
 #implement the triple thing
-#triple [min, max, step]
-def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, triple, classifier):
+#triple (min, max, step)
+def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, min_max_step, classifier):
 
     params = dict()
-    
     params[paramName] = 0
 
+    # What is H_poly doing and I think that the Test set (Xs_t,Ys_t) is redundant because its not used
+    # also the test set shouldnt be used in the CrossVal
+    # maybe it's possible to do that operation outside of the crossVal, since its not needed for the nb classifier
     Xs_r=H_poly(Xs_r,Ys_r, 10)
     Xs_t=H_poly(Xs_t, Ys_t, 10)
     
@@ -72,12 +74,11 @@ def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, triple, classifier):
     folds = 5
     kf = StratifiedKFold(n_splits=folds)
     best_va_err = 100
-    best_feats = 0
-    best_optimized = 0
+    best_value = 0
     
 
-    for i in ((min - max)/step):
-        params[paramName] = min + i * step
+    for i in range((min_max_step[0] - min_max_step[1])/min_max_step[2]):
+        params[paramName] = min_max_step[0] + i * min_max_step[2]
         classifier.set_params(params)
         
         
@@ -99,10 +100,9 @@ def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, triple, classifier):
           
         if(va_err < best_va_err):
               best_va_err = va_err
-              best_optimized = min + i * step
+              best_value = min_max_step[0] + i * min_max_step[2]
     
-    print('best feats: ', best_feats)
-    print('best optimized: ', best_optimized)
+    print('best optimized: ', best_value)
     print('best validation error: ', best_va_err/folds)
 
 
@@ -141,31 +141,6 @@ Xs_train = (Xs_train-means_train)/stdevs_train
 # standardize(test) based on train
 Xs_test = (Xs_test-means_train)/stdevs_train
 
-
-
-
-#tomas: what is this next bit for? i think we can remove it 
-
-# split train data according to their class
-Xs_train_0 = []
-Xs_train_1 = []
-for i in range(len(Xs_train)): 
-    if Ys_train[i]==0: 
-        Xs_train_0.append(Xs_train[i,:])
-    else: 
-        Xs_train_1.append(Xs_train[i,:])
-
-# train KDE on Test Data
-bw = 0.45
-kde = [None,None]
-kde[0] = KernelDensity(kernel='gaussian', bandwidth=bw)
-kde[0].fit(Xs_train_0)
-kde[1] = KernelDensity(kernel='gaussian', bandwidth=bw)
-kde[1].fit(Xs_train_1)
-
-# show results
-mat = calculate_confusion_matrix(kde, Xs_test)
-print_confusion_matrix(mat)
 
 
 """
