@@ -180,7 +180,7 @@ Xs_test = (Xs_test-means_train)/stdevs_train
 1.
 Naïve Bayes classifier using Kernel Density Estimation
 """
-
+print("Naive Bayes")
 
 nb = OwnNaiveBaseClassifier(1)
 bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.2,0.6,0.02), nb)
@@ -197,10 +197,18 @@ print_confusion_matrix(calculate_confusion_matrix(classes))
 2.
 Gaussian Naïve Bayes classifier
 
+"""
+
+
+
+print()
+print("Guassian NB")
 
 gnb = GaussianNB()
-gnb.fit(Xs_train,Ys_train)
-"""
+gnb.fit(Xs_train, Ys_train)
+classes = gnb.predict(Xs_test)
+
+print_confusion_matrix(calculate_confusion_matrix(classes))
 
 
 
@@ -208,6 +216,8 @@ gnb.fit(Xs_train,Ys_train)
 3.Support Vector Machine with a Gaussian radial basis function
 """
 
+print()
+print("SVM")
 sv = svm.SVC(C=1,kernel = 'rbf', gamma=0.2, probability=True)
 gamma = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv)
 
