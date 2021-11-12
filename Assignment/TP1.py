@@ -14,6 +14,47 @@ from sklearn import svm
 aux
 """
 
+class OwnNaiveBaseClassifier:
+    
+    kde = []
+    
+    def __init__(self, bandwidth):
+        self.bandwidth = bandwidth
+        
+    
+    def fit(self, Xs_train_set,Ys_train_set):
+                
+        # split train data according to their class
+        Xs_train_class = []
+        for i in range(int(max(Ys_train_set))+1):
+            Xs_train_class.append([])
+        for i in range(len(Ys_train_set)):
+            Xs_train_class[int(Ys_train_set[i])].append(Xs_train_set[i,:])
+            
+            
+        self.kde = []
+        for i in range(len(Xs_train_class)):
+            self.kde.append(KernelDensity(kernel='gaussian', bandwidth=self.bandwidth))
+            self.kde[i].fit(Xs_train_class[i])
+            
+    def predict(self, samples): 
+        classes = []
+        scores = []
+        for k in self.kde: 
+            scores.append(k.score_samples(samples))
+        for i in range(len(samples)): 
+            l = []
+            for j in range(len(scores)): 
+                l.append(scores[j][i])
+            classes.append(l.index(max(l)))
+        return classes
+    
+    def set_params(self, **params): 
+        self.bandwidth = params['bandwidth']
+        
+        
+
+
 def poly_mat(reg,X_data,feats,ax_lims):
     #create score matrix for contour
     Z = np.zeros((200,200))
@@ -69,17 +110,9 @@ def H_poly(X,Y,d):
 
 
 
-
-
-
-
-
-
-
-
 #implement the triple thing
 #triple [min, max, step]
-def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, triple, classifier):
+def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
     tmin = triple[0]
     tmax = triple[1]
     tstep = triple[2]
@@ -87,58 +120,46 @@ def crossValidation(Xs_r, Ys_r, Xs_t, Ys_t, paramName, triple, classifier):
     params = dict()
     params[paramName] = 0
 
-    Xs_r=H_poly(Xs_r,Ys_r, 10)
-    Xs_t=H_poly(Xs_t, Ys_t, 10)
-    
+
     folds = 5
     kf = StratifiedKFold(n_splits=folds)
     best_va_err = 100
     best_optimized = 0
+    
+    print("Starting Crossvalidation for " + paramName)
 
     #keep the +1 or it wont reach max
-    for i in range(int((tmax - tmin)/tstep) + 1):
-        if(i% 10 == 0):
-            print(i, "of", int((tmax - tmin)/tstep))   
+    for i in range(round((tmax - tmin)/tstep) + 1):
+        
+        #print(i, "of", round((tmax - tmin)/tstep))   
             
-        params[paramName] = tmin + i * tstep
+        params[paramName] = round(tmin + i * tstep,3)
         classifier.set_params(**params)
         
         tr_err = va_err = 0
         for tr_ix,va_ix in kf.split(Ys_r,Ys_r):
             
-            
-           classifier.fit(Xs_r[tr_ix],Ys_r[tr_ix])
-           
-           prob = classifier.predict_proba(Xs_r[:,:])[:,1]
-           squares = (prob-Ys_r)**2
-           r = np.mean(squares[tr_ix])
-           v = np.mean(squares[va_ix])   
-             
-           tr_err += r
-           va_err += v
+            classifier.fit(Xs_r[tr_ix],Ys_r[tr_ix])
+            if paramName == 'gamma': 
+                prob = np.round(classifier.predict_proba(Xs_r[:,:])[:,1])
+            else: 
+                prob = classifier.predict(Xs_r)    
+            squares = (prob-Ys_r)**2
+            r = np.mean(squares[tr_ix])
+            v = np.mean(squares[va_ix])   
+              
+            tr_err += r
+            va_err += v
           
         if(va_err < best_va_err):
               best_va_err = va_err
-              best_optimized = tmin + i * tstep
-    
-    print('best optimized value: ', best_optimized)
+              best_optimized = round(tmin + i * tstep,3)
+              
+    print('best '+paramName+' value: ', best_optimized)
     print('best validation error: ', best_va_err/folds)
     
-    params[paramName] = best_optimized
-    classifier.set_params(**params)
+    return best_optimized
     
-    classes = classifier.predict(Xs_t)
-    print_confusion_matrix(calculate_confusion_matrix(classes))
-
-
-
-
-
-
-
-
-
-
 
 
 """
@@ -178,72 +199,16 @@ Xs_test = (Xs_test-means_train)/stdevs_train
 """
 1.
 Naïve Bayes classifier using Kernel Density Estimation
-
 """
 
-    
-class OwnNaiveBaseClassifier:
-    
-    kde = []
-    
-    def __init__(self, bandwidth):
-        self.bandwidth = bandwidth
-        
-    
-    def fit(self, Xs_train_set,Ys_train_set):
-                
-        # split train data according to their class
-        Xs_train_class = []
-        for i in range(int(max(Ys_train_set))+1):
-            Xs_train_class.append([])
-        for i in range(len(Ys_train_set)):
-            Xs_train_class[int(Ys_train_set[i])].append(Xs_train_set[i,:])
-            
-            
-        self.kde = []
-        for i in range(len(Xs_train_class)):
-            self.kde.append(KernelDensity(kernel='gaussian', bandwidth=self.bandwidth))
-            self.kde[i].fit(Xs_train_class[i])
-            
-    def predict(self, samples): 
-        classes = []
-        scores = []
-        for k in self.kde: 
-            scores.append(k.score_samples(samples))
-        for i in range(len(samples)): 
-            l = []
-            for j in range(len(scores)): 
-                l.append(scores[j][i])
-            classes.append(l.index(max(l)))
-        return classes
-    
-    def set_params(self, params): 
-        self.bandwidth = params["bandwidth"]
-        
-        
-
-
-
-"""
 
 nb = OwnNaiveBaseClassifier(1)
+print("starting cross val")
+bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.2,0.6,0.02), nb)
+nb.set_params(**{'bandwidth': bandwidth})
 nb.fit(Xs_train, Ys_train)
 classes = nb.predict(Xs_test)
 print_confusion_matrix(calculate_confusion_matrix(classes))
-
-"""
-
-# show results
-##mat = calculate_confusion_matrix(kde, Xs_test)
-#print_confusion_matrix(mat)
-
-
-
-
-
-
-
-
 
 
 
@@ -256,32 +221,18 @@ gnb = GaussianNB()
 gnb.fit(Xs_train,Ys_train)
 """
 
-    
-
-
-
-
 
 
 """
 3.Support Vector Machine with a Gaussian radial basis function
 """
 
-
-
-
-
-
 sv = svm.SVC(C=1,kernel = 'rbf', gamma=0.2, probability=True)
-triple = [0.2, 6.0, 0.2]
-#change the range thing
-
-crossValidation(Xs_train, Ys_train, Xs_test, Ys_test, 'gamma', triple, sv)
-
-
-
-
-
+gamma = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv)
+sv.set_params(**{'gamma': gamma})
+sv.fit(Xs_train, Ys_train)
+classes = np.round(sv.predict_proba(Xs_test)[:,1])
+print_confusion_matrix(calculate_confusion_matrix(classes))
 
 
 
