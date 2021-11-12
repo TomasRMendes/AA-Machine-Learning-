@@ -2,19 +2,11 @@ import numpy as np
 from sklearn.neighbors import KernelDensity
 from sklearn.utils import shuffle
 from sklearn.metrics import accuracy_score
-
-from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegression
 import matplotlib.pyplot as plt
 from sklearn.naive_bayes import  GaussianNB
 from sklearn import svm
 
-
-
-"""
-aux
-"""
 
 class OwnNaiveBaseClassifier:
     
@@ -93,9 +85,11 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
     tmax = triple[1]
     tstep = triple[2]
 
-    params = dict()
-    params[paramName] = 0
-
+    validation_errs = []
+    training_errs = []
+    values = []
+    
+    
 
     folds = 5
     kf = StratifiedKFold(n_splits=folds)
@@ -108,9 +102,8 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
     for i in range(round((tmax - tmin)/tstep) + 1):
         
         #print(i, "of", round((tmax - tmin)/tstep))   
-            
-        params[paramName] = round(tmin + i * tstep,3)
-        classifier.set_params(**params)
+        values.append(round(tmin + i * tstep,3))
+        classifier.set_params(**{paramName : values[i]})
         
         tr_err = va_err = 0
         for tr_ix,va_ix in kf.split(Ys_r,Ys_r):
@@ -119,6 +112,10 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
             
             tr_err += 1-classifier.score(Xs_r[tr_ix],Ys_r[tr_ix])
             va_err += 1-classifier.score(Xs_r[va_ix],Ys_r[va_ix])
+        
+        validation_errs.append(va_err/folds)
+        training_errs.append(tr_err/folds)
+        
           
         if(va_err < best_va_err):
               best_va_err = va_err
@@ -126,6 +123,18 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
               
     print('best '+paramName+' value: ', best_optimized)
     print('best validation error: ', best_va_err/folds)
+    
+    
+    plt.figure(figsize=(12, 8))
+    plt.title("Crossvalidation for " + paramName)
+    plt.axis([tmin,tmax,0,max(validation_errs)*1.15])
+    plt.plot(values,training_errs,'-', label = "Training Error")
+    plt.plot(values,validation_errs,'-', label = "Validation Error")
+    plt.legend()
+    plt.savefig(paramName+'.png', dpi=300)
+    plt.show()
+    plt.close()
+
     
     return best_optimized
     
@@ -204,8 +213,7 @@ gamma = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv)
 
 sv.set_params(**{'gamma': gamma})
 sv.fit(Xs_train, Ys_train)
-classes = np.round(sv.predict_proba(Xs_test)[:,1])
-sc =sv.score(Xs_test, Ys_test)
+classes = sv.predict(Xs_test)
 print_confusion_matrix(calculate_confusion_matrix(classes))
 
 
