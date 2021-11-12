@@ -6,6 +6,7 @@ from sklearn.model_selection import StratifiedKFold
 import matplotlib.pyplot as plt
 from sklearn.naive_bayes import  GaussianNB
 from sklearn import svm
+import math
 
 
 class OwnNaiveBaseClassifier:
@@ -75,6 +76,7 @@ def calculate_confusion_matrix(classes):
     return confusion_matrix
     
 def print_confusion_matrix(mat): 
+    print()
     print("Predictions \tReal\tFake")
     print("Real\t\t\t"+str(mat[0])+"\t\t"+str(mat[1]))
     print("Fake\t\t\t"+str(mat[2])+"\t\t"+str(mat[3]))
@@ -137,7 +139,47 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
 
     
     return best_optimized
+
+
+
+def normalTest(mat):
+    errors = mat[1] + mat[2]
+    size = np.array(mat).sum()
     
+    interval = size * (errors/size) *(1 - errors/size)
+    interval = math.sqrt(interval) * 1.96
+    
+    return errors, interval
+
+def mcnemarTest(classes1, classes2):
+
+    #wrong in classifier 1 but right on 2    
+    e01 = 0
+    #right in classifier 1 but wrong on 2    
+    e10 = 0
+    for i in range(len(Ys_test)): 
+        if Ys_test[i]==classes1[i] and Ys_test[i]==classes2[i]:
+            #do nothing
+            continue
+            
+        elif Ys_test[i]==classes1[i] and Ys_test[i]!=classes2[i]: 
+            e10+=1
+            
+            
+        elif Ys_test[i]!=classes1[i] and Ys_test[i]==classes2[i]:
+            e01+=1
+            
+        else: 
+            #do nothing
+            continue
+        
+        
+    top = abs(e01 - e10) - 1
+    res = (top * top) / (e10 + e01)
+    
+    
+        
+    return res
 
 
 """
@@ -183,13 +225,21 @@ Naïve Bayes classifier using Kernel Density Estimation
 print("Naive Bayes")
 
 nb = OwnNaiveBaseClassifier(1)
-bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.2,0.6,0.02), nb)
+bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.02,0.6,0.02), nb)
 
 nb.set_params(**{'bandwidth': bandwidth})
 nb.fit(Xs_train, Ys_train)
-classes = nb.predict(Xs_test)
+nb_classes = nb.predict(Xs_test)
 
-print_confusion_matrix(calculate_confusion_matrix(classes))
+nb_mat = calculate_confusion_matrix(nb_classes)
+
+print_confusion_matrix(nb_mat)
+
+
+
+
+
+
 
 
 
@@ -200,15 +250,17 @@ Gaussian Naïve Bayes classifier
 """
 
 
-
 print()
 print("Guassian NB")
 
 gnb = GaussianNB()
 gnb.fit(Xs_train, Ys_train)
-classes = gnb.predict(Xs_test)
+gnb_classes = gnb.predict(Xs_test)
 
-print_confusion_matrix(calculate_confusion_matrix(classes))
+gnb_mat = calculate_confusion_matrix(gnb_classes)
+
+print_confusion_matrix(gnb_mat)
+
 
 
 
@@ -218,13 +270,48 @@ print_confusion_matrix(calculate_confusion_matrix(classes))
 
 print()
 print("SVM")
+
 sv = svm.SVC(C=1,kernel = 'rbf', gamma=0.2, probability=True)
 gamma = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv)
 
 sv.set_params(**{'gamma': gamma})
 sv.fit(Xs_train, Ys_train)
-classes = sv.predict(Xs_test)
-print_confusion_matrix(calculate_confusion_matrix(classes))
+svm_classes = sv.predict(Xs_test)
+
+svm_mat = calculate_confusion_matrix(svm_classes)
+print_confusion_matrix(svm_mat)
+
+
+
+
+"""
+compare stuff
+"""
+print()
+print("Normal tests")
+error, interval = normalTest(nb_mat)
+print(error, "+-", interval)
+
+error, interval = normalTest(gnb_mat)
+print(error, "+-", interval)
+
+error, interval = normalTest(svm_mat)
+print(error, "+-", interval)
+
+
+print()
+print("McNemar tests")
+
+print("NB vs GNB:", mcnemarTest(nb_classes, gnb_classes))
+print("NB vs SVM:", mcnemarTest(nb_classes, svm_classes))
+print("GNB vs SVM:", mcnemarTest(gnb_classes, svm_classes))
+print()
+
+print("Bellow 3.84 means they might be equivalent but affected by random chance")
+
+
+
+
 
 
 
