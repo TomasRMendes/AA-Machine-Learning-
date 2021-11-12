@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.neighbors import KernelDensity
 from sklearn.utils import shuffle
+from sklearn.metrics import accuracy_score
+
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LogisticRegression
@@ -49,27 +51,15 @@ class OwnNaiveBaseClassifier:
             classes.append(l.index(max(l)))
         return classes
     
+    def score(self, Xs, Ys):
+        classes = self.predict(Xs)
+        return accuracy_score(Ys, classes)
+        
+    
     def set_params(self, **params): 
         self.bandwidth = params['bandwidth']
         
         
-
-
-def poly_mat(reg,X_data,feats,ax_lims):
-    #create score matrix for contour
-    Z = np.zeros((200,200))
-    xs = np.linspace(ax_lims[0],ax_lims[1],200)
-    ys = np.linspace(ax_lims[2],ax_lims[3],200)
-    X,Y = np.meshgrid(xs,ys)
-    points = np.zeros((200,2))
-    points[:,0] = xs
-    for ix in range(len(ys)):
-        points[:,1] = ys[ix]
-        x_points=H_poly(points,ys,16)[:,:feats]
-        Z[ix,:] = reg.decision_function(x_points)
-    return (X,Y,Z)
-
-    
 
 def calculate_confusion_matrix(classes):
     confusion_matrix = [0,# Real and Predicted Real
@@ -98,20 +88,6 @@ def print_confusion_matrix(mat):
     print("Fake\t\t\t"+str(mat[2])+"\t\t"+str(mat[3]))
     
 
-
-
-def H_poly(X,Y,d):
- H = np.zeros((X.shape[0],X.shape[0]))
- for row in range(X.shape[0]):
-     for col in range(X.shape[0]):
-         k = (np.dot(X[row,:],X[col,:])+1)**d
-         H[row,col] = k*Y[row]*Y[col]
- return H
-
-
-
-#implement the triple thing
-#triple [min, max, step]
 def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
     tmin = triple[0]
     tmax = triple[1]
@@ -140,16 +116,9 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
         for tr_ix,va_ix in kf.split(Ys_r,Ys_r):
             
             classifier.fit(Xs_r[tr_ix],Ys_r[tr_ix])
-            if paramName == 'gamma': 
-                prob = np.round(classifier.predict_proba(Xs_r[:,:])[:,1])
-            else: 
-                prob = classifier.predict(Xs_r)    
-            squares = (prob-Ys_r)**2
-            r = np.mean(squares[tr_ix])
-            v = np.mean(squares[va_ix])   
-              
-            tr_err += r
-            va_err += v
+            
+            tr_err += 1-classifier.score(Xs_r[tr_ix],Ys_r[tr_ix])
+            va_err += 1-classifier.score(Xs_r[va_ix],Ys_r[va_ix])
           
         if(va_err < best_va_err):
               best_va_err = va_err
@@ -163,6 +132,8 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
 
 
 """
+START OF PROGRAM
+
 load, randomize and standardize
 """
 
@@ -203,11 +174,12 @@ Naïve Bayes classifier using Kernel Density Estimation
 
 
 nb = OwnNaiveBaseClassifier(1)
-print("starting cross val")
 bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.2,0.6,0.02), nb)
+
 nb.set_params(**{'bandwidth': bandwidth})
 nb.fit(Xs_train, Ys_train)
 classes = nb.predict(Xs_test)
+
 print_confusion_matrix(calculate_confusion_matrix(classes))
 
 
@@ -229,9 +201,11 @@ gnb.fit(Xs_train,Ys_train)
 
 sv = svm.SVC(C=1,kernel = 'rbf', gamma=0.2, probability=True)
 gamma = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv)
+
 sv.set_params(**{'gamma': gamma})
 sv.fit(Xs_train, Ys_train)
 classes = np.round(sv.predict_proba(Xs_test)[:,1])
+sc =sv.score(Xs_test, Ys_test)
 print_confusion_matrix(calculate_confusion_matrix(classes))
 
 
