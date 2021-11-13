@@ -81,9 +81,11 @@ def print_confusion_matrix(mat):
     print("Real\t\t\t"+str(mat[0])+"\t\t"+str(mat[1]))
     print("Fake\t\t\t"+str(mat[2])+"\t\t"+str(mat[3]))
     
+    print("true error estimation: ", (mat[1]+mat[2]) / np.array(mat).sum() )
+    
 
 
-def crossValidation(Xs_r, Ys_r, paramName, triple, classifier, cTriple):
+def crossValidation(Xs_r, Ys_r, paramName, triple, classifier, cTriple, pngName):
     tmin = triple[0]
     tmax = triple[1]
     tstep = triple[2]
@@ -97,6 +99,7 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier, cTriple):
     best_va_err = 100
     best_optimized = 0
     
+    #cTriple = [starting value for C, how many times to step it, step]
     c = cTriple[0] - cTriple[2]
     cReps = cTriple[1]
     cStep = cTriple[2]
@@ -152,7 +155,7 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier, cTriple):
     plt.plot(values,training_errs,'-', label = "Training Error")
     plt.plot(values,validation_errs,'-', label = "Validation Error")
     plt.legend()
-    plt.savefig(paramName+'.png', dpi=300)
+    plt.savefig(pngName +'.png', dpi=300)
     plt.show()
     plt.close()
 
@@ -246,7 +249,7 @@ Naïve Bayes classifier using Kernel Density Estimation
 print("Naive Bayes")
 
 nb = OwnNaiveBaseClassifier(1)
-bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.02,0.6,0.02), nb, (0,0,0))
+bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.02,0.6,0.02), nb, (0,0,0), "NB")
 
 nb.set_params(**{'bandwidth': bandwidth})
 nb.fit(Xs_train, Ys_train)
@@ -290,7 +293,7 @@ print("SVM")
 
 sv = svm.SVC(C=1,kernel = 'rbf', gamma=0.2, probability=True)
 
-gamma, c = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv, (1, 5, 100))
+gamma, c = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv, (0.5, 4, 0.5), "SVC")
 sv.set_params(**{'gamma': gamma})
 
 sv.set_params(**{'C': c})
