@@ -15,7 +15,11 @@ This way the standardized training set is not affected by the data from the test
 
 
 Q3: Explain how you calculated the prior probability of an example belonging to a class (the probability before taking into account the attribute values of the example) in your Naïve Bayes classifier implementation. You may include a relevant piece of your code if this helps you explain.
-R3: TODO
+R3: The prior probability for a specific class was calculated by taking the amount of examples in the training set belonging to that class and devide it by the number of all examples in the train set and compute the natural logarithm of the obtained numeber.
+    This can be seen in the following code: 
+    self.prior_prob.append(math.log(len(Xs_train_class[i])/len(Xs_train_set)))
+        #where Xs_train_class[i] contains the examples of the training set belonging to class "i"
+             
 
 
 Q4: Explain how your Naïve Bayes classifier predicts the class to which a test example belongs. You may include a relevant piece of your code if this helps you explain.
@@ -39,8 +43,10 @@ R6:TODO
 
 
 Q7: Explain how you determined the best bandwidth and gamma parameters for your classifier and the SVM classifier. You may include a relevant piece of your code if this helps you explain.
-R7:We did a cross validation for both of the classifiers for the corresponding parameters using five stratified folds and comparing the validation error as the parameters change within the specified range and keeping the parameters for the lowest validation error
+R7:We did a cross validation for both of the classifiers for the corresponding parameters using five stratified folds and comparing the validation error as the parameters change within the 
+    specified range and keeping the parameters for the lowest validation error
   
+  #LOOP for all parameter-values in the specified range (stored in values)
   
   classifier.set_params(**{paramName : values[i]})
   for tr_ix,va_ix in kf.split(Ys_r,Ys_r):

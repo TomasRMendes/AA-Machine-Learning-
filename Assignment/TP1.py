@@ -12,6 +12,7 @@ import math
 class OwnNaiveBaseClassifier:
     
     kde = []
+    prior_prob = []
     
     def __init__(self, bandwidth):
         self.bandwidth = bandwidth
@@ -31,6 +32,7 @@ class OwnNaiveBaseClassifier:
         for i in range(len(Xs_train_class)):
             self.kde.append(KernelDensity(kernel='gaussian', bandwidth=self.bandwidth))
             self.kde[i].fit(Xs_train_class[i])
+            self.prior_prob.append(math.log(len(Xs_train_class[i])/len(Xs_train_set)))
             
     def predict(self, samples): 
         classes = []
@@ -40,7 +42,7 @@ class OwnNaiveBaseClassifier:
         for i in range(len(samples)): 
             l = []
             for j in range(len(scores)): 
-                l.append(scores[j][i])
+                l.append(self.prior_prob[j] + scores[j][i])
             classes.append(l.index(max(l)))
         return classes
     
