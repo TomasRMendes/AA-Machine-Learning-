@@ -6,41 +6,97 @@ Attention:
 QUESTIONS:
 
 Q1: Considering the data provided, explain the need to standardize the attribute values.
-R1: We standardize it in order to reduce the noise in the data and better correlate it(?)
+R1: We standardize it in order to reduce the noise in the data and better correlate it
 
 
 Q2: Explain how you calculated the parameters for standardization and how you used them in the test set.
-R2:
+R2: We used the means and standard deviation from only the training set and subtract the means divided by the tandard deviation to both the training and test set. 
+This way the standardized training set is not affected by the data from the test set. And if the test set is not evenly distributed our estimations are still accurate.
 
 
-Q3: Explain how you calculated the prior probability of an example belonging to a class (the probability before taking into account the attribute values ​​of the example) in your Naïve Bayes classifier implementation. You may include a relevant piece of your code if this helps you explain.
-R3:
+Q3: Explain how you calculated the prior probability of an example belonging to a class (the probability before taking into account the attribute values of the example) in your Naïve Bayes classifier implementation. You may include a relevant piece of your code if this helps you explain.
+R3: TODO
 
 
 Q4: Explain how your Naïve Bayes classifier predicts the class to which a test example belongs. You may include a relevant piece of your code if this helps you explain.
-R4:
+R4: We train one kde and with all the samples of class = 1 from the training set, and another kde with the samples of class = 0, then for both of them we calculate the probability of the data features from the test example belonging to it's distribuition.
+Then we atribute the test example class to wichever kde scores higher.
+
+
 
 
 Q5: Explain the effect of the bandwidth parameter on your classifier.
-R5:
+R5:The bandwidth affects the kernel density estimation by changing the width of the gaussian curve for each point.
+This way a small bandwidth leads to overfitting which leads to a low training error and a high validation error
+By increasing the bandwidth we allow for datapoints farther from our training datapoints to have an increased probability of belonging to the destribuition.
+Therefore the training error increases but more importantly the validation error decreases.
+If we increase the bandwidth too much it has the effect of granting a high probability to datapoints that should not belong in the distribuition.
+This leads to both a high training error and validation error as can be seen on our "bandwidth.png".
 
 
 Q6: Explain what effect the gamma parameter has on the SVM classifier.
-R6:
+R6:TODO
 
 
 Q7: Explain how you determined the best bandwidth and gamma parameters for your classifier and the SVM classifier. You may include a relevant piece of your code if this helps you explain.
-R7:
+R7:We did a cross validation for both of the classifiers for the corresponding parameters using five stratified folds and comparing the validation error as the parameters change within the specified range and keeping the parameters for the lowest validation error
+  
+  
+  classifier.set_params(**{paramName : values[i]})
+  for tr_ix,va_ix in kf.split(Ys_r,Ys_r):
+      classifier.fit(Xs_r[tr_ix],Ys_r[tr_ix])
+
+      tr_err += 1-classifier.score(Xs_r[tr_ix],Ys_r[tr_ix])
+      va_err += 1-classifier.score(Xs_r[va_ix],Ys_r[va_ix])
+  if(va_err < best_va_err):
+      best_va_err = va_err
+      #best_ optimized is the parameter value we want to improve
+      best_optimized = round(tmin + i * tstep,3)
+
 
 
 Q8: Explain how you obtained the best hypothesis for each classifier after optimizing all parameters.
-R8:
+R8:TODO
 
 
 Q9: Show the best parameters, the estimate of the true error for each hypothesis you obtained (your classifier and the two provided by the library), the ranges in the expected number of errors given by the approximate normal test, the McNemar test values, and discuss what you can conclude from this.
 R9:
 
+NB:
+best bandwidth value:  0.24
+best validation error:  0.029689959839357426
+true error estimation:  0.04330392943063352
+
+GNB:
+
+SVM:
+best gamma value:  3.8
+best C value:  1
+best validation error:  0.028883534136546207
+true error estimation:  0.0408981555733761
+
+Normal tests
+NB:  54 +- 14.087695188843382
+GNB:  118 +- 20.258664826719137
+SVM:  51 +- 13.707981905554707
+
+McNemar tests
+NB vs GNB: 38.16346153846154
+NB vs SVM: 0.4444444444444444
+GNB vs SVM: 39.96330275229358
+
+conclusion:
+From the McNemar tests we can conclude that our NB and the SVM are very similar so its hard to say which is better.
+Where as for the GNB has a high McNemar test value with either classifiers above 3.84, meaning there is atleast 95% probability the GNB is operating diferently from the others,
+The GNB also has much higher normal test values than the other two classifier, and therefore we can conclude that our NB and the SVM are significantly better than the GNB
+For a real aplications between these 3 classifiers, we would suggest either our NB or the SVM, based on our results.
+
+
+Bellow 3.84 means they might be equivalent but affected by random chance
+
 
 Q10: (Optional) Show the estimate of the true error of the optimized SVM classifier (if you did the optional part of the work) and discuss whether it was worth doing this optimization. If you did not do the optional part leave this answer blank.
-R10: 51 +- 13.707981905554707, our best value for C was 1 so there was no improvment, as to whether it was worth doing it, since it was a simple implementation we would say it was worth as it could've improved our SVM
+R10: 
+51 +- 13.707981905554707, our best value for C was 1 so there was no improvment.
+As to whether it was worth doing it, since it was a simple implementation we would say it was worth as it could've improved our SVM.
 
