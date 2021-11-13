@@ -82,7 +82,8 @@ def print_confusion_matrix(mat):
     print("Fake\t\t\t"+str(mat[2])+"\t\t"+str(mat[3]))
     
 
-def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
+
+def crossValidation(Xs_r, Ys_r, paramName, triple, classifier, cTriple):
     tmin = triple[0]
     tmax = triple[1]
     tstep = triple[2]
@@ -91,40 +92,58 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
     training_errs = []
     values = []
     
-    
-
     folds = 5
     kf = StratifiedKFold(n_splits=folds)
     best_va_err = 100
     best_optimized = 0
     
+    c = cTriple[0] - cTriple[2]
+    cReps = cTriple[1]
+    cStep = cTriple[2]
+    bestC = 0
+
+
     print("Starting Crossvalidation for " + paramName)
 
-    #keep the +1 or it wont reach max
-    for i in range(round((tmax - tmin)/tstep) + 1):
-        
-        #print(i, "of", round((tmax - tmin)/tstep))   
-        values.append(round(tmin + i * tstep,3))
-        classifier.set_params(**{paramName : values[i]})
-        
-        tr_err = va_err = 0
-        for tr_ix,va_ix in kf.split(Ys_r,Ys_r):
+    for j in range(max(cReps, 1)):
+        c+=cStep
+        #keep the +1 or it wont reach max
+        for i in range(round((tmax - tmin)/tstep) + 1):
             
-            classifier.fit(Xs_r[tr_ix],Ys_r[tr_ix])
+            #print(i, "of", round((tmax - tmin)/tstep))   
+            if(j == 0):
+                values.append(round(tmin + i * tstep,3))
+            classifier.set_params(**{paramName : values[i]})
             
-            tr_err += 1-classifier.score(Xs_r[tr_ix],Ys_r[tr_ix])
-            va_err += 1-classifier.score(Xs_r[va_ix],Ys_r[va_ix])
-        
-        validation_errs.append(va_err/folds)
-        training_errs.append(tr_err/folds)
-        
-          
-        if(va_err < best_va_err):
-              best_va_err = va_err
-              best_optimized = round(tmin + i * tstep,3)
+            if(c != 0):            
+                classifier.set_params(**{"C" : c})
+                
+                
+            tr_err = va_err = 0
+            for tr_ix,va_ix in kf.split(Ys_r,Ys_r):
+                
+                classifier.fit(Xs_r[tr_ix],Ys_r[tr_ix])
+                
+                tr_err += 1-classifier.score(Xs_r[tr_ix],Ys_r[tr_ix])
+                va_err += 1-classifier.score(Xs_r[va_ix],Ys_r[va_ix])
+            
+            if(j == 0):
+                validation_errs.append(va_err/folds)
+                training_errs.append(tr_err/folds)
+            
               
+            if(va_err < best_va_err):
+                  best_va_err = va_err
+                  best_optimized = round(tmin + i * tstep,3)
+                  bestC = c
+    
+        
     print('best '+paramName+' value: ', best_optimized)
     print('best validation error: ', best_va_err/folds)
+    if(bestC != 0):
+        print('best C value: ', bestC)
+        
+    
     
     
     plt.figure(figsize=(12, 8))
@@ -137,6 +156,8 @@ def crossValidation(Xs_r, Ys_r, paramName, triple, classifier):
     plt.show()
     plt.close()
 
+    if(bestC != 0): 
+        return best_optimized, bestC
     
     return best_optimized
 
@@ -225,7 +246,7 @@ Naïve Bayes classifier using Kernel Density Estimation
 print("Naive Bayes")
 
 nb = OwnNaiveBaseClassifier(1)
-bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.02,0.6,0.02), nb)
+bandwidth = crossValidation(Xs_train, Ys_train, 'bandwidth', (0.02,0.6,0.02), nb, (0,0,0))
 
 nb.set_params(**{'bandwidth': bandwidth})
 nb.fit(Xs_train, Ys_train)
@@ -234,10 +255,6 @@ nb_classes = nb.predict(Xs_test)
 nb_mat = calculate_confusion_matrix(nb_classes)
 
 print_confusion_matrix(nb_mat)
-
-
-
-
 
 
 
@@ -272,9 +289,12 @@ print()
 print("SVM")
 
 sv = svm.SVC(C=1,kernel = 'rbf', gamma=0.2, probability=True)
-gamma = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv)
 
+gamma, c = crossValidation(Xs_train, Ys_train, 'gamma', (0.2, 6, 0.2), sv, (1, 5, 100))
 sv.set_params(**{'gamma': gamma})
+
+sv.set_params(**{'C': c})
+
 sv.fit(Xs_train, Ys_train)
 svm_classes = sv.predict(Xs_test)
 
@@ -290,13 +310,13 @@ compare stuff
 print()
 print("Normal tests")
 error, interval = normalTest(nb_mat)
-print(error, "+-", interval)
+print("NB: ", error, "+-", interval)
 
 error, interval = normalTest(gnb_mat)
-print(error, "+-", interval)
+print("GNB: ", error, "+-", interval)
 
 error, interval = normalTest(svm_mat)
-print(error, "+-", interval)
+print("SVM: ", error, "+-", interval)
 
 
 print()

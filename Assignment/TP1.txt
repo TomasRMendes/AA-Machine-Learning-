@@ -6,7 +6,7 @@ Attention:
 QUESTIONS:
 
 Q1: Considering the data provided, explain the need to standardize the attribute values.
-R1:
+R1: We standardize it in order to reduce the noise in the data and better correlate it(?)
 
 
 Q2: Explain how you calculated the parameters for standardization and how you used them in the test set.
@@ -42,5 +42,5 @@ R9:
 
 
 Q10: (Optional) Show the estimate of the true error of the optimized SVM classifier (if you did the optional part of the work) and discuss whether it was worth doing this optimization. If you did not do the optional part leave this answer blank.
-R10:
+R10: 51 +- 13.707981905554707, our best value for C was 1 so there was no improvment, as to whether it was worth doing it, since it was a simple implementation we would say it was worth as it could've improved our SVM
 
