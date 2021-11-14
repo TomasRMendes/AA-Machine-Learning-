@@ -6,7 +6,7 @@ Attention:
 QUESTIONS:
 
 Q1: Considering the data provided, explain the need to standardize the attribute values.
-R1: We standardize it in order to reduce the noise in the data and better correlate it
+R1: We standardize it in order to reduce the noise in the data and to avoid high discrepancies that may create a bias on our classifiers
 
 
 Q2: Explain how you calculated the parameters for standardization and how you used them in the test set.
@@ -21,12 +21,9 @@ R3: The prior probability for a specific class was calculated by taking the amou
         #where Xs_train_class[i] contains the examples of the training set belonging to class "i"
              
 
-
 Q4: Explain how your Naïve Bayes classifier predicts the class to which a test example belongs. You may include a relevant piece of your code if this helps you explain.
 R4: We train one kde and with all the samples of class = 1 from the training set, and another kde with the samples of class = 0, then for both of them we calculate the probability of the data features from the test example belonging to it's distribuition.
 Then we atribute the test example class to wichever kde scores higher.
-
-
 
 
 Q5: Explain the effect of the bandwidth parameter on your classifier.
@@ -39,7 +36,10 @@ This leads to both a high training error and validation error as can be seen on 
 
 
 Q6: Explain what effect the gamma parameter has on the SVM classifier.
-R6:TODO
+R6:the gamma affects  kernel density estimation by changing the variance of the gaussian curve for each point.
+However compared to the bandwidth for the Naive Bayes classifier the gamma has an inverse effect on the curve.
+This means that as we increase the gamma, we decrease the variance of the gaussian curve,
+decreasing the training error but more importantly decreasing the validation error up to a certain extent.
 
 
 Q7: Explain how you determined the best bandwidth and gamma parameters for your classifier and the SVM classifier. You may include a relevant piece of your code if this helps you explain.
@@ -60,25 +60,23 @@ R7:We did a cross validation for both of the classifiers for the corresponding p
       best_optimized = round(tmin + i * tstep,3)
 
 
-
 Q8: Explain how you obtained the best hypothesis for each classifier after optimizing all parameters.
-R8:TODO
+R8: We used cross validation with stratified folds to optimize the parameters for each classifier.
+Then we retrain the best model with the entire training set to get the best hypothesis.
 
 
 Q9: Show the best parameters, the estimate of the true error for each hypothesis you obtained (your classifier and the two provided by the library), the ranges in the expected number of errors given by the approximate normal test, the McNemar test values, and discuss what you can conclude from this.
 R9:
-
 NB:
 best bandwidth value:  0.24
-best validation error:  0.029689959839357426
 true error estimation:  0.04330392943063352
 
 GNB:
+true error estimation:  0.0946271050521251
 
 SVM:
 best gamma value:  3.8
 best C value:  1
-best validation error:  0.028883534136546207
 true error estimation:  0.0408981555733761
 
 Normal tests
@@ -96,9 +94,6 @@ From the McNemar tests we can conclude that our NB and the SVM are very similar 
 Where as for the GNB has a high McNemar test value with either classifiers above 3.84, meaning there is atleast 95% probability the GNB is operating diferently from the others,
 The GNB also has much higher normal test values than the other two classifier, and therefore we can conclude that our NB and the SVM are significantly better than the GNB
 For a real aplications between these 3 classifiers, we would suggest either our NB or the SVM, based on our results.
-
-
-Bellow 3.84 means they might be equivalent but affected by random chance
 
 
 Q10: (Optional) Show the estimate of the true error of the optimized SVM classifier (if you did the optional part of the work) and discuss whether it was worth doing this optimization. If you did not do the optional part leave this answer blank.
